@@ -29,18 +29,18 @@ func (s *SecretService) CreateSecret(ctx context.Context, secret domain.Secret, 
 	case domain.CredentialsSecretType, domain.PaymentCardSecretType:
 		secretData, err := io.ReadAll(contentReader)
 		if err != nil {
-			return fmt.Errorf("application.CreateSecret: failed to read secret content: %w", err)
+			return fmt.Errorf("failed to read secret content: %w", err)
 		}
 		secret.Data = string(secretData)
 
 		err = s.client.CreateSecret(ctx, secret)
 		if err != nil {
-			return fmt.Errorf("application.CreateSecret: failed to create secret: %w", err)
+			return fmt.Errorf("client.CreateSecret: %w", err)
 		}
 	case domain.FileSecretType, domain.TextSecretType:
 		err := s.client.CreateSecretStream(ctx, secret, contentReader)
 		if err != nil {
-			return fmt.Errorf("application.CreateSecret: failed to create stream secret: %w", err)
+			return fmt.Errorf("client.CreateSecretStream: %w", err)
 		}
 	}
 
@@ -52,7 +52,7 @@ func (s *SecretService) CreateSecret(ctx context.Context, secret domain.Secret, 
 func (s *SecretService) ListSecrets(ctx context.Context) ([]string, error) {
 	secretList, err := s.client.ListSecrets(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("application.ListSecrets: %w", err)
+		return nil, fmt.Errorf("client.ListSecrets: %w", err)
 	}
 	return secretList, nil
 }
@@ -62,7 +62,7 @@ func (s *SecretService) ListSecrets(ctx context.Context) ([]string, error) {
 func (s *SecretService) GetLatestSecret(ctx context.Context, secretName string) (*domain.Secret, error) {
 	secret, err := s.client.GetLatestSecret(ctx, secretName)
 	if err != nil {
-		return nil, fmt.Errorf("application.GetLatestSecret: %w", err)
+		return nil, fmt.Errorf("client.GetLatestSecret: %w", err)
 	}
 	return secret, nil
 }
@@ -72,7 +72,7 @@ func (s *SecretService) GetLatestSecret(ctx context.Context, secretName string) 
 func (s *SecretService) GetLatestSecretStream(ctx context.Context, secretName string) (io.Reader, *domain.SecretInfo, error) {
 	stream, secretInfo, err := s.client.GetLatestSecretStream(ctx, secretName)
 	if err != nil {
-		return nil, nil, fmt.Errorf("application.GetLatestSecretStream: %w", err)
+		return nil, nil, fmt.Errorf("client.GetLatestSecretStream: %w", err)
 	}
 	return stream, secretInfo, nil
 }
@@ -82,7 +82,7 @@ func (s *SecretService) GetLatestSecretStream(ctx context.Context, secretName st
 func (s *SecretService) GetSecretByVersion(ctx context.Context, secretName string, version int32) (*domain.Secret, error) {
 	secret, err := s.client.GetSecretByVersion(ctx, secretName, version)
 	if err != nil {
-		return nil, fmt.Errorf("application.GetSecretByVersion: %w", err)
+		return nil, fmt.Errorf("client.GetSecretByVersion: %w", err)
 	}
 	return secret, nil
 }
@@ -92,7 +92,7 @@ func (s *SecretService) GetSecretByVersion(ctx context.Context, secretName strin
 func (s *SecretService) GetSecretStreamByVersion(ctx context.Context, secretName string, version int32) (io.Reader, *domain.SecretInfo, error) {
 	stream, secretInfo, err := s.client.GetSecretStreamByVersion(ctx, secretName, version)
 	if err != nil {
-		return nil, nil, fmt.Errorf("application.GetSecretStreamByVersion: %w", err)
+		return nil, nil, fmt.Errorf("client.GetSecretStreamByVersion: %w", err)
 	}
 	return stream, secretInfo, nil
 }
@@ -102,7 +102,7 @@ func (s *SecretService) GetSecretStreamByVersion(ctx context.Context, secretName
 func (s *SecretService) DeleteSecret(ctx context.Context, secretName string) error {
 	err := s.client.DeleteSecret(ctx, secretName)
 	if err != nil {
-		return fmt.Errorf("application.DeleteSecret: %w", err)
+		return fmt.Errorf("client.DeleteSecret: %w", err)
 	}
 	return nil
 }

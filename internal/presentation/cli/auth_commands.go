@@ -24,7 +24,7 @@ func newRegisterCmd(ctx context.Context, authService domain.AuthService) *cobra.
 
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := authService.Register(ctx, login, password); err != nil {
-				log.Error().Err(err).Msg("Failed to register")
+				log.Error().Err(err).Msg("failed to register")
 
 				switch {
 				case errors.Is(err, domain.ErrLoginAlreayExists):
@@ -62,7 +62,7 @@ func newLoginCmd(ctx context.Context, authService domain.AuthService) *cobra.Com
 
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := authService.Login(ctx, login, password); err != nil {
-				log.Error().Err(err).Msg("Failed to log in")
+				log.Error().Err(err).Msg("failed to log in")
 
 				switch {
 				case errors.Is(err, domain.ErrInvalidCredentials):

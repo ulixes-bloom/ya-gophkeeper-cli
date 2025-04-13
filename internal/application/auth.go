@@ -27,10 +27,10 @@ func NewAuthService(client domain.AuthClient, tokenRepository domain.TokenReposi
 func (s *AuthService) Register(ctx context.Context, login, passsword string) error {
 	jwtToken, err := s.client.Register(ctx, login, passsword)
 	if err != nil {
-		return fmt.Errorf("application.Register: %w", err)
+		return fmt.Errorf("client.Register: %w", err)
 	}
 	if err = s.tokenRepository.SaveToken(jwtToken); err != nil {
-		return fmt.Errorf("application.Register: %w", err)
+		return fmt.Errorf("tokenRepository.SaveToken: %w", err)
 	}
 	return nil
 }
@@ -41,10 +41,10 @@ func (s *AuthService) Register(ctx context.Context, login, passsword string) err
 func (s *AuthService) Login(ctx context.Context, login, passsword string) error {
 	jwtToken, err := s.client.Login(ctx, login, passsword)
 	if err != nil {
-		return fmt.Errorf("application.Login: %w", err)
+		return fmt.Errorf("client.Login: %w", err)
 	}
 	if err = s.tokenRepository.SaveToken(jwtToken); err != nil {
-		return fmt.Errorf("application.Login: %w", err)
+		return fmt.Errorf("tokenRepository.SaveToken: %w", err)
 	}
 	return nil
 }

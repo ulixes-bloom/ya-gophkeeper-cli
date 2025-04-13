@@ -27,11 +27,11 @@ func Parse() (*Config, error) {
 	conf := GetDefault()
 
 	if err := env.Parse(conf); err != nil {
-		return nil, fmt.Errorf("config.Parse: %w", err)
+		return nil, fmt.Errorf("failed to parse config from env variables: %w", err)
 	}
 
 	if err := validateConfig(conf); err != nil {
-		return nil, fmt.Errorf("config.Parse: %w", err)
+		return nil, fmt.Errorf("failed to validate config: %w", err)
 	}
 
 	return conf, nil

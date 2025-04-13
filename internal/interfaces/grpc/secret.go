@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 
@@ -65,22 +66,19 @@ func (c *SecretClient) CreateSecret(ctx context.Context, secret domain.Secret) e
 func (c *SecretClient) CreateSecretStream(ctx context.Context, secret domain.Secret, reader io.Reader) error {
 	stream, err := c.client.CreateSecretStream(ctx)
 	if err != nil {
-		return fmt.Errorf("grpc.CreateSecretStream: failed to start stream: %v", err)
+		return fmt.Errorf("client.CreateSecretStream: %w", err)
 	}
 
-	// Send metadata first
 	if err := c.sendMetadataChunk(stream, secret); err != nil {
-		return fmt.Errorf("grpc.CreateSecretStream: failed to send metadata chunk: %v", err)
+		return fmt.Errorf("failed to send metadata chunk: %w", err)
 	}
 
-	// Send data chunks
 	if err := c.sendDataChunks(stream, reader); err != nil {
-		return fmt.Errorf("grpc.CreateSecretStream: failed to send data chunks: %w", err)
+		return fmt.Errorf("failed to send data chunks: %w", err)
 	}
 
-	// Close the stream gracefully
 	if _, err = stream.CloseAndRecv(); err != nil {
-		return fmt.Errorf("grpc.CreateSecretStream: failed to close stream: %v", err)
+		return fmt.Errorf("failed to close stream and recieve server's response: %w", err)
 	}
 
 	return nil
@@ -100,7 +98,7 @@ func (c *SecretClient) sendDataChunks(stream pb.SecretService_CreateSecretStream
 	buf := make([]byte, chunkSize)
 	for {
 		n, err := reader.Read(buf)
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
@@ -123,7 +121,7 @@ func (c *SecretClient) sendDataChunks(stream pb.SecretService_CreateSecretStream
 func (c *SecretClient) ListSecrets(ctx context.Context) ([]string, error) {
 	resp, err := c.client.ListSecrets(ctx, &emptypb.Empty{})
 	if err != nil {
-		return nil, fmt.Errorf("grpc.ListSecrets: %w", err)
+		return nil, fmt.Errorf("client.ListSecrets: %w", err)
 	}
 
 	return resp.Data, nil
@@ -133,7 +131,7 @@ func (c *SecretClient) ListSecrets(ctx context.Context) ([]string, error) {
 func (c *SecretClient) GetLatestSecret(ctx context.Context, secretName string) (*domain.Secret, error) {
 	resp, err := c.client.GetLatestSecret(ctx, &pb.GetLatestSecretRequest{Name: secretName})
 	if err != nil {
-		return nil, fmt.Errorf("grpc.GetLatestSecret: %w", err)
+		return nil, fmt.Errorf("client.GetLatestSecret: %w", err)
 	}
 
 	secret := mapProtoGetSecretResponseToDomainSecret(resp)
@@ -144,23 +142,22 @@ func (c *SecretClient) GetLatestSecret(ctx context.Context, secretName string) (
 func (c *SecretClient) GetLatestSecretStream(ctx context.Context, secretName string) (io.Reader, *domain.SecretInfo, error) {
 	stream, err := c.client.GetLatestSecretStream(ctx, &pb.GetLatestSecretRequest{Name: secretName})
 	if err != nil {
-		return nil, nil, fmt.Errorf("grpc.GetLatestSecretStream: failed to create stream: %w", err)
+		return nil, nil, fmt.Errorf("client.GetLatestSecretStream: %w", err)
 	}
 
 	// Read the first chunk (metadata)
 	firstChunk, err := stream.Recv()
 	if err != nil {
-		return nil, nil, fmt.Errorf("grpc.GetLatestSecretStream: failed to receive first chunk with metadata: %w", err)
+		return nil, nil, fmt.Errorf("failed to receive first chunk with metadata: %w", err)
 	}
 	secretInfo := firstChunk.GetInfo()
 	if secretInfo == nil {
-		return nil, nil, fmt.Errorf("grpc.GetLatestSecretStream: secret info is required")
+		return nil, nil, fmt.Errorf("first chunk must contain secret info")
 	}
 
 	domainSecretInfo := mapProtoGetSecretInfoResponseToDomainSecretInfo(secretInfo)
-	reader := NewSecretStreamReader(stream)
 
-	return reader, &domainSecretInfo, nil
+	return NewSecretStreamReader(stream), &domainSecretInfo, nil
 }
 
 // GetSecretByVersion retrieves a specific version of a secret.
@@ -170,7 +167,7 @@ func (c *SecretClient) GetSecretByVersion(ctx context.Context, secretName string
 		Version: version,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("grpc.GetSecretByVersion: %w", err)
+		return nil, fmt.Errorf("client.GetSecretByVersion: %w", err)
 	}
 
 	secret := mapProtoGetSecretResponseToDomainSecret(resp)
@@ -185,19 +182,18 @@ func (c *SecretClient) GetSecretStreamByVersion(ctx context.Context, secretName 
 		Version: version,
 	})
 	if err != nil {
-		return nil, nil, fmt.Errorf("grpc.GetSecretStreamByVersion: failed to create stream: %w", err)
+		return nil, nil, fmt.Errorf("client.GetSecretStreamByVersion: %w", err)
 	}
 
 	firstChunk, err := stream.Recv()
 	if err != nil {
-		return nil, nil, fmt.Errorf("grpc.GetSecretStreamByVersion: failed to recieve metadata: %w", err)
+		return nil, nil, fmt.Errorf("failed to recieve metadata: %w", err)
 	}
 	secretInfo := firstChunk.GetInfo()
 	if secretInfo == nil {
-		return nil, nil, fmt.Errorf("grpc.GetSecretStreamByVersion: first chunk must contain secret info")
+		return nil, nil, fmt.Errorf("first chunk must contain secret info")
 	}
 
-	// Map the protobuf response to the domain model
 	domainSecretInfo := mapProtoGetSecretInfoResponseToDomainSecretInfo(secretInfo)
 
 	return NewSecretStreamReader(stream), &domainSecretInfo, nil
@@ -209,7 +205,7 @@ func (c *SecretClient) DeleteSecret(ctx context.Context, secretName string) erro
 		Name: secretName,
 	})
 	if err != nil {
-		return fmt.Errorf("grpc.DeleteSecret: %w", err)
+		return fmt.Errorf("client.DeleteSecret: %w", err)
 	}
 
 	return nil

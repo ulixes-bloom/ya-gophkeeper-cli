@@ -1,6 +1,7 @@
 package grpc
 
 import (
+	"errors"
 	"fmt"
 	"io"
 
@@ -37,16 +38,16 @@ func (r *secretStreamReader) Read(p []byte) (int, error) {
 	// Get next chunk from stream
 	response, err := r.stream.Recv()
 	if err != nil {
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return 0, io.EOF
 		}
-		return 0, fmt.Errorf("grpc.Read: stream read failed: %w", err)
+		return 0, fmt.Errorf("stream read failed: %w", err)
 	}
 
 	// Verify we got data chunk (not metadata or other message type)
 	chunk := response.GetData()
 	if chunk == nil {
-		return 0, fmt.Errorf("grpc.Read: expected data chunk, got %T", response.Chunk)
+		return 0, fmt.Errorf("expected data chunk, got %T", response.Chunk)
 	}
 
 	// Store new data in buffer

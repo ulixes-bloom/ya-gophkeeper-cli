@@ -24,7 +24,7 @@ type AuthClient struct {
 func NewAuthClient(serverAddr string, creds credentials.TransportCredentials) (*AuthClient, error) {
 	conn, err := grpc.NewClient(serverAddr, grpc.WithTransportCredentials(creds))
 	if err != nil {
-		return nil, fmt.Errorf("grpc.NewAuthClient: failed to create grpc chanel: %w", err)
+		return nil, fmt.Errorf("failed to create grpc chanel: %w", err)
 	}
 
 	client := pb.NewAuthClient(conn)
@@ -53,16 +53,16 @@ func (c *AuthClient) Register(ctx context.Context, login, passsword string) (str
 			case codes.AlreadyExists:
 				return "", domain.ErrLoginAlreayExists
 			default:
-				return "", fmt.Errorf("grpc.Register: registration failed")
+				return "", fmt.Errorf("registration failed: %w", err)
 			}
 		} else {
-			return "", fmt.Errorf("grpc.Register: registration failed: can't parse gRPC response code")
+			return "", fmt.Errorf("registration failed: can't parse gRPC response code: %w", err)
 		}
 	}
 
 	token := resp.GetToken()
 	if token == "" {
-		return "", fmt.Errorf("grpc.Register: empty token received")
+		return "", fmt.Errorf("received empty token")
 	}
 
 	return token, nil
@@ -83,16 +83,16 @@ func (c *AuthClient) Login(ctx context.Context, login, passsword string) (string
 			case codes.InvalidArgument:
 				return "", domain.ErrInvalidCredentials
 			default:
-				return "", fmt.Errorf("grpc.Login: registration failed")
+				return "", fmt.Errorf("registration failed: %w", err)
 			}
 		} else {
-			return "", fmt.Errorf("grpc.Login: registration failed: can't parse gRPC response code")
+			return "", fmt.Errorf("registration failed: can't parse gRPC response code: %w", err)
 		}
 	}
 
 	token := resp.GetToken()
 	if token == "" {
-		return "", fmt.Errorf("grpc.Login: empty token received")
+		return "", fmt.Errorf("received empty token")
 	}
 
 	return token, nil
